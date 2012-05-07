@@ -1,12 +1,10 @@
 # Our tutorial's WSGI server
 from wsgiref.simple_server import make_server
 from webob import Request, Response
-from logging import getLogger
 import re
 from subprocess import Popen, PIPE
 
-
-
+from logging import getLogger
 log = getLogger(__name__)
 
 
