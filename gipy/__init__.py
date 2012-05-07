@@ -3,6 +3,7 @@ from wsgiref.simple_server import make_server
 from webob import Request, Response
 import re
 from subprocess import Popen, PIPE
+from datetime import datetime
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -58,7 +59,7 @@ class SmartGit(object):
 
     def handle_request(self, request):
         global views
-        view = None
+        action = None
         for regex, method, rpc, callable in views:
             if re.match(regex, request.path_info):
                 if method != request.method:
@@ -69,7 +70,7 @@ class SmartGit(object):
         if not action:
             raise NotFound()
 
-        return action(request)
+        return action(self, request)
 
     @action("(.*?)/git-upload-pack$", "POST", "upload-pack")
     @action("(.*?)/git-receive-pack$", "POST", "receive-pack")
@@ -143,13 +144,13 @@ class SmartGit(object):
     def get_text_file(self, request):
         return self.send_file(request, "text/plain", self.hdr_cache_forever())
 
-    def send_file(self, reqfile, content_type):
-        pass
+    def send_file(self, request, content_type, response):
+        return response
 
     def get_git_dir(self, path):
         pass
 
-    def get_service_type(self):
+    def get_service_type(self, request):
         pass
 
     def has_access(self, rpc, check_content_type=False):
@@ -158,6 +159,23 @@ class SmartGit(object):
     def git_command(self, command):
         git_bin = self.config.get('git', 'git')
         return  "%s %s" % (git_bin, command)
+
+    def update_server_info(self, request):
+        pass
+
+    def hdr_cache_forever(self):
+        res = Response()
+        res.date = datetime.now().isoformat()
+        res.expires = 0
+        res.cache_control = "public, max-age=31536000"
+        return res
+
+    def hdr_nocache(self):
+        res = Response()
+        res.expires = "Fri, 01 Jan 1980 00:00:00 GMT"
+        res.pragma = "no-cache"
+        res.cache_control = "no-cache, max-age=0, must-revalidate"
+        return Response()
         
 
 httpd = make_server('localhost', 8051, SmartGit())
